@@ -44,6 +44,51 @@ def index():
             return render_template('index.html', tasks=tasks)
     return redirect(url_for('login'))
 
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    if current_user.role in ['admin', 'manager']:
+        tasks = Task.query.all()  # Fetch all tasks for admins and managers
+    else:
+        tasks = Task.query.filter_by(assigned_to_id=current_user.id).all()  # Fetch only tasks assigned to the current user
+
+    return render_template('dashboard.html', tasks=tasks)
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    form = SignupForm()
+    if form.validate_on_submit():
+        hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
+        new_user = User(username=form.username.data, email=form.email.data, password_hash=hashed_password, role=form.role.data)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Account created successfully!', 'success')
+        return redirect(url_for('login'))
+    return render_template('signup.html', form=form)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter(
+            (User.username == form.username_or_email.data) | 
+            (User.email == form.username_or_email.data)
+        ).first()
+        if user and check_password_hash(user.password_hash, form.password.data):
+            login_user(user)
+            flash('Login successful!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Login Unsuccessful. Please check username/email and password', 'danger')
+    return render_template('login.html', form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('login'))
+
 @app.route('/create_task', methods=['GET', 'POST'])
 @login_required
 def create_task():
@@ -92,15 +137,6 @@ def delete_task(task_id):
 
     return redirect(url_for('dashboard'))
 
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    if current_user.role in ['admin', 'manager']:
-        tasks = Task.query.all()  # Fetch all tasks for admins and managers
-    else:
-        tasks = Task.query.filter_by(assigned_to_id=current_user.id).all()  # Fetch only tasks assigned to the current user
-
-    return render_template('dashboard.html', tasks=tasks)
 
 @app.route('/update_task/<int:task_id>', methods=['POST'])
 @login_required
@@ -143,40 +179,6 @@ def review_task(task_id):
     return redirect(url_for('dashboard'))
 
 
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    form = SignupForm()
-    if form.validate_on_submit():
-        hashed_password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
-        new_user = User(username=form.username.data, email=form.email.data, password_hash=hashed_password, role=form.role.data)
-        db.session.add(new_user)
-        db.session.commit()
-        flash('Account created successfully!', 'success')
-        return redirect(url_for('login'))
-    return render_template('signup.html', form=form)
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter(
-            (User.username == form.username_or_email.data) | 
-            (User.email == form.username_or_email.data)
-        ).first()
-        if user and check_password_hash(user.password_hash, form.password.data):
-            login_user(user)
-            flash('Login successful!', 'success')
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Login Unsuccessful. Please check username/email and password', 'danger')
-    return render_template('login.html', form=form)
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash('You have been logged out.', 'success')
-    return redirect(url_for('login'))
 
 @app.route('/task/<int:task_id>')
 def task_detail(task_id):
