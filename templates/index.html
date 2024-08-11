@@ -1,0 +1,43 @@
+<!-- app/templates/index.html -->
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        {% if current_user.is_authenticated and current_user.role == 'admin' %}
+            <h1>Employees</h1>
+            <a href="{{ url_for('create_user') }}" class="btn btn-primary">Create New User</a>
+            {% for employee in employees %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ employee.username }}</h5>
+                            <p class="card-text">Role: {{ employee.role }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <p>No employees found.</p>
+            {% endfor %}
+        {% elif current_user.is_authenticated and current_user.role in ['worker', 'supervisor'] %}
+            <h1>Tasks</h1>
+            {% if tasks %}
+                <ul class="list-group">
+                    {% for task in tasks %}
+                        <li class="list-group-item">
+                            {% if task.status == 'submitted' %}
+                            <span class="task-name" style="font-weight: 900;">{{ task.title }}</span>
+                            <span class="badge bg-success float-end">Completed</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No tasks assigned.</p>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

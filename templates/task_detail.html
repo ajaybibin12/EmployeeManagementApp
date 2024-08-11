@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+    <h2>{{task.title}}</h2>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <p><strong>Assigned To:</strong> {{ task.assigned_user.username }}</p>
+            <p><strong>Status:</strong> {{ task.status }}</p>
+            <p><strong>Completion:</strong> {{ task.completion_percentage }}%</p>
+        </div>
+    </div>
+    <!-- If the user is a worker or supervisor, show the update form -->
+    {% if current_user.role in ['worker', 'supervisor'] %}
+    <form action="{{ url_for('update_task', task_id=task.id) }}" method="POST" class="mt-4">
+        <div class="mb-3">
+            <label for="comments" class="form-label">Add Comment</label>
+            <textarea class="form-control" name="comments" rows="3">{{ task.comments }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="completion_percentage" class="form-label">Completion Percentage</label>
+            <input type="number" class="form-control" name="completion_percentage" value="{{ task.completion_percentage }}" min="0" max="100">
+        </div>
+        <div class="mb-3">
+            <label for="status" class="form-label">Status</label>
+            <select class="form-select" name="status">
+                <option value="working" {% if task.status == 'working' %}selected{% endif %}>Working</option>
+                <option value="review" {% if task.status == 'review' %}selected{% endif %}>Review</option>
+                <option value="submitted" {% if task.status == 'submitted' %}selected{% endif %}>Submitted</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Task</button>
+    </form>
+    {% endif %}
+
+    <!-- If the user is an admin or manager and task is in review, show approval form -->
+    {% if current_user.role in ['admin', 'manager'] and task.status == 'review' %}
+    <form action="{{ url_for('review_task', task_id=task.id) }}" method="POST" class="mt-4">
+        <button name="action" value="approve" class="btn btn-success">Approve</button>
+        <button name="action" value="reject" class="btn btn-danger">Reject</button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,5 @@
+1. Update the code
+2. Migrate the Database
+   --- flask db init
+   --- flask db migrate -m "Initial migration."
+   --- flask db upgrade
